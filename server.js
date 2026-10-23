@@ -199,6 +199,105 @@ function seedSuperadmin() {
   }
 }
 seedSuperadmin();
+
+function seedDemoOfficers() {
+  if (process.env.ENABLE_DEMO_OFFICERS !== "true") {
+    console.log("Demo officer seeding disabled.");
+    return;
+  }
+
+  const demos = [
+    {
+      department: "Electricity",
+      username: "demo_electricity",
+      fullName: "Demo Electricity Officer",
+      password: "ElecDemo#2026"
+    },
+    {
+      department: "Roads & transport",
+      username: "demo_roads",
+      fullName: "Demo Roads Officer",
+      password: "RoadsDemo#2026"
+    },
+    {
+      department: "Water & sanitation",
+      username: "demo_water",
+      fullName: "Demo Water Officer",
+      password: "WaterDemo#2026"
+    },
+    {
+      department: "Health",
+      username: "demo_health",
+      fullName: "Demo Health Officer",
+      password: "HealthDemo#2026"
+    },
+    {
+      department: "Revenue & documents",
+      username: "demo_revenue",
+      fullName: "Demo Revenue Officer",
+      password: "RevenueDemo#2026"
+    },
+    {
+      department: "Other",
+      username: "demo_other",
+      fullName: "Demo Other Department Officer",
+      password: "OtherDemo#2026"
+    }
+  ];
+
+  let changed = false;
+
+  for (const demo of demos) {
+    const now = new Date().toISOString();
+
+    let officer = officerStore.officers.find(
+      o => String(o.username || "").toLowerCase() === demo.username
+    );
+
+    // Never overwrite an administrator account.
+    if (officer && officer.role !== "officer") {
+      console.warn("Demo username conflicts with a non-officer account:", demo.username);
+      continue;
+    }
+
+    if (!officer) {
+      officer = {
+        id: "off-demo-" + crypto.randomBytes(12).toString("hex"),
+        username: demo.username,
+        fullName: demo.fullName,
+        department: demo.department,
+        email: "",
+        role: "officer",
+        active: true,
+        passwordHash: "",
+        createdAt: now,
+        updatedAt: now
+      };
+
+      officerStore.officers.push(officer);
+    }
+
+    officer.fullName = demo.fullName;
+    officer.department = demo.department;
+    officer.role = "officer";
+    officer.active = true;
+
+    // Store a password hash, never the plain-text password.
+    officer.passwordHash = hashPassword(demo.password);
+    officer.updatedAt = now;
+
+    changed = true;
+  }
+
+  if (changed) {
+    saveOfficersSync();
+  }
+
+  console.log("Demo officer account seeding completed.");
+}
+
+seedDemoOfficers();
+
 function getSession(req) {
   const h = req.get("authorization") || "";
   const token = h.startsWith("Bearer ") ? h.slice(7) : "";
